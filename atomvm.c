@@ -1,12 +1,29 @@
 #include <stdio.h>
 #include <stdint.h>
 
+// Errors
 #define STACK_OVERFLOW_ERROR 1
 #define STACK_UNDERFLOW_ERROR 2
 #define FILE_TOO_LARGE_ERROR 3
 #define FILE_EMPTY_ERROR 4
 #define NO_INPUT_FILE_ERROR 5
 #define FILE_NOT_FOUND_ERROR 6
+#define UNKNOWN_OPCODE 7
+
+// Opcodes
+#define PUSH 0
+#define POP 1
+#define ADD 2
+#define SUB 3
+#define MUL 4
+#define DIV 5
+#define JMP 6
+#define JIG 7
+#define JIE 8
+#define JIS 9
+#define JIZ 10
+#define JNE 11
+#define HALT 12
 
 typedef struct {
     uint8_t stack[256];
@@ -33,6 +50,70 @@ int pop(vm_state *vm, uint8_t *byte) {
     vm->stack_size--;
 
     return 0;
+}
+
+int fetch_decode_exec_loop(vm_state *vm) {
+    while (1) {
+        switch (vm->program[vm->pc]) {
+            case PUSH:
+                int code = push(vm, vm->program[vm->pc + 1]);
+                if (!code)
+                    return code;
+
+                vm->pc += 2;
+                break;
+
+            case POP:
+                uint8_t idc;
+                int code = pop(vm, &idc);
+                if (!code)
+                    return code;
+
+                vm->pc += 2;
+                break;
+
+            case ADD:
+                uint8_t x, y;
+                int code;
+
+                code = pop(vm, &x);
+                if (!code)
+                    return code;
+
+                code = pop(vm, &y);
+                if (!code)
+                    return code;
+
+                code = push(vm, x + y);
+                if (!code)
+                    return code;
+
+                vm->pc++;
+                break;
+
+            case SUB:
+                uint8_t x, y;
+                int code;
+
+                code = pop(vm, &x);
+                if (!code)
+                    return code;
+
+                code = pop(vm, &y);
+                if (!code)
+                    return code;
+
+                code = push(vm, x - y);
+                if (!code)
+                    return code;
+
+                vm->pc++;
+                break;
+
+            case HALT: return 0;
+            default: return UNKNOWN_OPCODE;
+        }
+    }
 }
 
 int main(int argc, char **argv) {
