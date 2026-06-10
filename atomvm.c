@@ -11,19 +11,20 @@
 #define UNKNOWN_OPCODE 7
 
 // Opcodes
-#define PUSH 0
-#define POP 1
-#define ADD 2
-#define SUB 3
-#define MUL 4
-#define DIV 5
-#define JMP 6
-#define JIG 7
-#define JIE 8
-#define JIS 9
-#define JIZ 10
-#define JNE 11
-#define HALT 12
+#define HALT 0
+#define PUSH 1
+#define POP 2
+#define ADD 3
+#define SUB 4
+#define MUL 5
+#define DIV 6
+#define JMP 7
+#define JIG 8
+#define JIE 9
+#define JIS 10
+#define JIZ 11
+#define JNE 12
+#define HALT 13
 
 typedef struct {
     uint8_t stack[256];
