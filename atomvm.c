@@ -8,7 +8,7 @@
 #define FILE_EMPTY_ERROR 4
 #define NO_INPUT_FILE_ERROR 5
 #define FILE_NOT_FOUND_ERROR 6
-#define UNKNOWN_OPCODE 7
+#define UNKNOWN_OPCODE_ERROR 7
 
 // Opcodes
 #define HALT 0
@@ -107,7 +107,7 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 break;
 
             case HALT: return 0;
-            default: return UNKNOWN_OPCODE;
+            default: return UNKNOWN_OPCODE_ERROR;
         }
     }
 }
@@ -148,5 +148,25 @@ int main(int argc, char **argv) {
         vm.program[i] = (uint8_t) b;
     }
 
-    return 0;
+    int exit_code = fetch_decode_exec_loop(&vm);
+    int last_pc = vm.pc;
+
+    if (exit_code != 0) {
+        printf("EXECUTION ABNORMALLY TERMINATED AT PC: 0x%x\nREASON: ", last_pc);
+        switch (exit_code) {
+            case STACK_OVERFLOW_ERROR:
+                printf("STACK OVERFLOW\n");
+                break;
+
+            case STACK_UNDERFLOW_ERROR:
+                printf("STACK UNDERFLOW\n");
+                break;
+
+            case UNKNOWN_OPCODE_ERROR:
+                printf("UNKNOWN OPCODE\n");
+                break;
+        }
+    }
+
+    return exit_code;
 }
