@@ -65,9 +65,10 @@ int peek(vm_state *vm, uint8_t *byte) {
 int fetch_decode_exec_loop(vm_state *vm) {
     while (1) {
         uint8_t x, y, idc;
+        uint8_t opcode = vm->program[vm->pc];
         int code;
 
-        switch (vm->program[vm->pc]) {
+        switch (opcode) {
             case PUSH:
                 code = push(vm, vm->program[vm->pc + 1]);
                 if (code)
@@ -81,67 +82,32 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 if (code)
                     return code;
 
-                vm->pc += 2;
+                vm->pc++;
                 break;
 
             case ADD:
-                code = pop(vm, &x);
-                if (code)
-                    return code;
-
-                code = pop(vm, &y);
-                if (code)
-                    return code;
-
-                code = push(vm, x + y);
-                if (code)
-                    return code;
-
-                vm->pc++;
-                break;
-
             case SUB:
-                code = pop(vm, &x);
-                if (code)
-                    return code;
-
-                code = pop(vm, &y);
-                if (code)
-                    return code;
-
-                code = push(vm, x - y);
-                if (code)
-                    return code;
-
-                vm->pc++;
-                break;
-
             case MUL:
-                code = pop(vm, &x);
-                if (code)
-                    return code;
-
-                code = pop(vm, &y);
-                if (code)
-                    return code;
-
-                code = push(vm, x * y);
-                if (code)
-                    return code;
-
-                vm->pc++;
-                break;
-
             case DIV:
                 code = pop(vm, &x);
                 if (code)
                     return code;
 
                 code = pop(vm, &y);
-                if (code) 
+                if (code)
                     return code;
 
-                code = push(vm, x / y);
+                uint8_t result;
+                if (opcode == ADD) 
+                    result = x + y;
+                else if (opcode == SUB)
+                    result = x - y;
+                else if (opcode == MUL)
+                    result = x * y;
+                else
+                    result = x / y;
+
+                code = push(vm, result);
                 if (code)
                     return code;
 
