@@ -15,18 +15,6 @@ typedef struct {
     uint8_t pc;
 } vm_state;
 
-vm_state initialize_vm(uint8_t *program) {
-    uint8_t stack[256];
-    vm_state vm = {
-        .stack_size = 0,
-        .pc = 0,
-        .program = program,
-        .stack = stack
-    };
-
-    return vm;
-}
-
 int push(vm_state *vm, uint8_t byte) {
     if (vm->stack_size == 256)
         return STACK_OVERFLOW_ERROR;
@@ -73,14 +61,15 @@ int main(int argc, char **argv) {
 
     rewind(file);
     uint8_t program[256];
+    vm_state vm = {0};
+
     for (size_t i = 0; i < size; i++) {
         int b = fgetc(file);
         if (b == EOF)
             break;
 
-        program[i] = (uint8_t) b;
+        vm.program[i] = (uint8_t) b;
     }
 
-    vm_state vm = initialize_vm(program);
     return 0;
 }
