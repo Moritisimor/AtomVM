@@ -24,31 +24,41 @@
 #define JIS 10
 #define JIZ 11
 #define JNE 12
+#define PUTN 13
+#define PUTC 14
 
 typedef struct {
     uint8_t stack[256];
     uint8_t program[256];
-    uint8_t stack_size;
+    uint8_t stack_pointer;
     uint8_t pc;
 } vm_state;
 
 int push(vm_state *vm, uint8_t byte) {
-    if (vm->stack_size == 256)
+    if (vm->stack_pointer == 256)
         return STACK_OVERFLOW_ERROR;
 
-    vm->stack[vm->stack_size - 1] = byte;
-    vm->stack_size++;
+    vm->stack[vm->stack_pointer] = byte;
+    vm->stack_pointer++;
 
     return 0;
 }
 
 int pop(vm_state *vm, uint8_t *byte) {
-    if (vm->stack_size == 0)
+    if (vm->stack_pointer == 0)
         return STACK_UNDERFLOW_ERROR;
 
-    *byte = vm->stack[vm->stack_size - 1];
-    vm->stack_size--;
+    *byte = vm->stack[vm->stack_pointer];
+    vm->stack_pointer--;
 
+    return 0;
+}
+
+int peek(vm_state *vm, uint8_t *byte) {
+    if (vm->stack_pointer == 0)
+        return STACK_UNDERFLOW_ERROR;
+
+    *byte = vm->stack[vm->stack_pointer - 1];
     return 0;
 }
 
@@ -60,7 +70,7 @@ int fetch_decode_exec_loop(vm_state *vm) {
         switch (vm->program[vm->pc]) {
             case PUSH:
                 code = push(vm, vm->program[vm->pc + 1]);
-                if (!code)
+                if (code)
                     return code;
 
                 vm->pc += 2;
@@ -68,7 +78,7 @@ int fetch_decode_exec_loop(vm_state *vm) {
 
             case POP:
                 code = pop(vm, &idc);
-                if (!code)
+                if (code)
                     return code;
 
                 vm->pc += 2;
@@ -76,15 +86,15 @@ int fetch_decode_exec_loop(vm_state *vm) {
 
             case ADD:
                 code = pop(vm, &x);
-                if (!code)
+                if (code)
                     return code;
 
                 code = pop(vm, &y);
-                if (!code)
+                if (code)
                     return code;
 
                 code = push(vm, x + y);
-                if (!code)
+                if (code)
                     return code;
 
                 vm->pc++;
@@ -92,17 +102,35 @@ int fetch_decode_exec_loop(vm_state *vm) {
 
             case SUB:
                 code = pop(vm, &x);
-                if (!code)
+                if (code)
                     return code;
 
                 code = pop(vm, &y);
-                if (!code)
+                if (code)
                     return code;
 
                 code = push(vm, x - y);
-                if (!code)
+                if (code)
                     return code;
 
+                vm->pc++;
+                break;
+
+            case PUTN:
+                code = peek(vm, &x);
+                if (code)
+                    return code;
+
+                printf("%d", x);
+                vm->pc++;
+                break;
+
+            case PUTC:
+                code = peek(vm, &x);
+                if (code)
+                    return code;
+
+                printf("%c", x);
                 vm->pc++;
                 break;
 
