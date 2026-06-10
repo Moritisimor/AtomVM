@@ -116,6 +116,38 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 vm->pc++;
                 break;
 
+            case MUL:
+                code = pop(vm, &x);
+                if (code)
+                    return code;
+
+                code = pop(vm, &y);
+                if (code)
+                    return code;
+
+                code = push(vm, x * y);
+                if (code)
+                    return code;
+
+                vm->pc++;
+                break;
+
+            case DIV:
+                code = pop(vm, &x);
+                if (code)
+                    return code;
+
+                code = pop(vm, &y);
+                if (code) 
+                    return code;
+
+                code = push(vm, x / y);
+                if (code)
+                    return code;
+
+                vm->pc++;
+                break;
+
             case PUTN:
                 code = peek(vm, &x);
                 if (code)
