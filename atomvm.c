@@ -48,7 +48,7 @@ int pop(vm_state *vm, uint8_t *byte) {
     if (vm->stack_pointer == 0)
         return STACK_UNDERFLOW_ERROR;
 
-    *byte = vm->stack[vm->stack_pointer];
+    *byte = vm->stack[vm->stack_pointer - 1];
     vm->stack_pointer--;
 
     return 0;
