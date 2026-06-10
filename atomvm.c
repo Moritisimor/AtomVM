@@ -26,6 +26,8 @@
 #define JNE 12
 #define PUTN 13
 #define PUTC 14
+#define JNZ 15
+#define DUP 16
 
 typedef struct {
     uint8_t stack[256];
@@ -64,7 +66,7 @@ int peek(vm_state *vm, uint8_t *byte) {
 
 int fetch_decode_exec_loop(vm_state *vm) {
     while (1) {
-        uint8_t x, y, idc;
+        uint8_t x, y, z;
         uint8_t opcode = vm->program[vm->pc];
         int code;
 
@@ -78,7 +80,7 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 break;
 
             case POP:
-                code = pop(vm, &idc);
+                code = pop(vm, &x);
                 if (code)
                     return code;
 
@@ -130,6 +132,109 @@ int fetch_decode_exec_loop(vm_state *vm) {
 
                 printf("%c", x);
                 vm->pc++;
+                break;
+
+            case JMP:
+                uint8_t jmp_target = vm->program[vm->pc + 1];
+
+                code = pop(vm, &x);
+                if (code)
+                    return code;
+
+                vm->pc = jmp_target;
+                break;
+
+            case JIE:
+                uint8_t jmp_target = vm->program[vm->pc + 1];
+        
+                code = pop(vm, &x);
+                if (code)
+                    return code;
+
+                code = pop(vm, &y);
+                if (code)
+                    return code;
+
+                if (x == y)
+                    vm->pc = jmp_target;
+                else
+                    vm->pc += 2;
+
+                break;
+
+            case JIG:
+                uint8_t jmp_target = vm->program[vm->pc + 1];
+
+                code = pop(vm, &x);
+                if (code)
+                    return code;
+
+                code = pop(vm, &y);
+                if (code)
+                    return code;
+
+                if (x > y)
+                    vm->pc = jmp_target;
+                else
+                    vm->pc += 2;
+
+                break;
+
+            case JIS:
+                uint8_t jmp_target = vm->program[vm->pc + 1];
+
+                code = pop(vm, &x);
+                if (code)
+                    return code;
+
+                code = pop(vm, &y);
+                if (code)
+                    return code;
+
+                if (x < y)
+                    vm->pc = jmp_target;
+                else
+                    vm->pc += 2;
+
+                break;
+
+            case JIZ:
+                uint8_t jmp_target = vm->program[vm->pc + 1];
+
+                code = pop(vm, &x);
+                if (code)
+                    return code;
+
+                if (x == 0)
+                    vm->pc = jmp_target;
+                else
+                    vm->pc += 2;
+
+                break;
+
+            case JNZ:
+                uint8_t jmp_target = vm->program[vm->pc + 1];
+
+                code = pop(vm, &x);
+                if (code)
+                    return code;
+
+                if (x != 0)
+                    vm->pc = jmp_target;
+                else
+                    vm->pc += 2;
+
+                break;
+
+            case DUP:
+                code = peek(vm, &x);
+                if (code)
+                    return code;
+
+                code = push(vm, x);
+                if (code)
+                    return code;
+
                 break;
 
             case HALT: return 0;
