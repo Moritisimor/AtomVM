@@ -24,7 +24,6 @@
 #define JIS 10
 #define JIZ 11
 #define JNE 12
-#define HALT 13
 
 typedef struct {
     uint8_t stack[256];
@@ -55,9 +54,12 @@ int pop(vm_state *vm, uint8_t *byte) {
 
 int fetch_decode_exec_loop(vm_state *vm) {
     while (1) {
+        uint8_t x, y, idc;
+        int code;
+
         switch (vm->program[vm->pc]) {
             case PUSH:
-                int code = push(vm, vm->program[vm->pc + 1]);
+                code = push(vm, vm->program[vm->pc + 1]);
                 if (!code)
                     return code;
 
@@ -65,8 +67,7 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 break;
 
             case POP:
-                uint8_t idc;
-                int code = pop(vm, &idc);
+                code = pop(vm, &idc);
                 if (!code)
                     return code;
 
@@ -74,9 +75,6 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 break;
 
             case ADD:
-                uint8_t x, y;
-                int code;
-
                 code = pop(vm, &x);
                 if (!code)
                     return code;
@@ -93,9 +91,6 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 break;
 
             case SUB:
-                uint8_t x, y;
-                int code;
-
                 code = pop(vm, &x);
                 if (!code)
                     return code;
