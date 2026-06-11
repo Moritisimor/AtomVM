@@ -40,7 +40,7 @@ typedef struct {
 } vm_state;
 
 int push(vm_state *vm, uint8_t byte) {
-    if (vm->stack_pointer == 256)
+    if (vm->stack_pointer == 255)
         return STACK_OVERFLOW_ERROR;
 
     vm->stack[vm->stack_pointer] = byte;
@@ -61,9 +61,7 @@ int pop(vm_state *vm, uint8_t *byte) {
     if (vm->stack_pointer == 0)
         return STACK_UNDERFLOW_ERROR;
 
-    *byte = vm->stack[vm->stack_pointer - 1];
-    vm->stack_pointer--;
-
+    *byte = vm->stack[--vm->stack_pointer];
     return 0;
 }
 
@@ -77,7 +75,7 @@ int peek(vm_state *vm, uint8_t *byte) {
 
 int fetch_decode_exec_loop(vm_state *vm) {
     while (1) {
-        uint8_t x, y, z;
+        uint8_t x, y, z, jmp_target, address;
         uint8_t opcode = vm->program[vm->pc];
         int code;
 
@@ -146,17 +144,12 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 break;
 
             case JMP:
-                uint8_t jmp_target = vm->program[vm->pc + 1];
-
-                code = pop(vm, &x);
-                if (code)
-                    return code;
-
+                jmp_target = vm->program[vm->pc + 1];
                 vm->pc = jmp_target;
                 break;
 
             case JIE:
-                uint8_t jmp_target = vm->program[vm->pc + 1];
+                jmp_target = vm->program[vm->pc + 1];
         
                 code = pop(vm, &x);
                 if (code)
@@ -174,7 +167,7 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 break;
 
             case JIG:
-                uint8_t jmp_target = vm->program[vm->pc + 1];
+                jmp_target = vm->program[vm->pc + 1];
 
                 code = pop(vm, &x);
                 if (code)
@@ -192,7 +185,7 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 break;
 
             case JIS:
-                uint8_t jmp_target = vm->program[vm->pc + 1];
+                jmp_target = vm->program[vm->pc + 1];
 
                 code = pop(vm, &x);
                 if (code)
@@ -210,7 +203,7 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 break;
 
             case JIZ:
-                uint8_t jmp_target = vm->program[vm->pc + 1];
+                jmp_target = vm->program[vm->pc + 1];
 
                 code = pop(vm, &x);
                 if (code)
@@ -224,7 +217,7 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 break;
 
             case JNZ:
-                uint8_t jmp_target = vm->program[vm->pc + 1];
+                jmp_target = vm->program[vm->pc + 1];
 
                 code = pop(vm, &x);
                 if (code)
@@ -249,7 +242,7 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 break;
 
             case STORE:
-                uint8_t address = vm->program[vm->pc + 1];
+                address = vm->program[vm->pc + 1];
 
                 code = pop(vm, &x);
                 if (code)
@@ -260,7 +253,7 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 break;
 
             case LOAD:
-                uint8_t address = vm->program[vm->pc + 1];
+                address = vm->program[vm->pc + 1];
 
                 code = pop(vm, &x);
                 if (code)
@@ -281,14 +274,14 @@ int fetch_decode_exec_loop(vm_state *vm) {
 
 int main(int argc, char **argv) {
     if (argc < 2) {
-        printf("Usage: atomvm <file path>");
+        printf("Usage: atomvm <file path>\n");
         return NO_INPUT_FILE_ERROR;
     }
 
     char *file_name = argv[1];
     FILE *file = fopen(file_name, "r");
     if (file == 0) {
-        printf("File '%s' not found", file_name);
+        printf("File '%s' not found\n", file_name);
         return FILE_NOT_FOUND_ERROR;
     }
 
@@ -296,10 +289,10 @@ int main(int argc, char **argv) {
     long size = ftell(file);
 
     if (size > 256) {
-        printf("Programs may not be larger than 256 bytes (this one is %d bytes large)", size);
+        printf("Programs may not be larger than 256 bytes (this one is %d bytes large)\n", size);
         return FILE_TOO_LARGE_ERROR;
     } else if (size == 0) {
-        printf("Programs may not be empty");
+        printf("Programs may not be empty\n");
         return FILE_EMPTY_ERROR;
     }
 
@@ -319,7 +312,9 @@ int main(int argc, char **argv) {
     int last_pc = vm.pc;
 
     if (exit_code != 0) {
-        printf("EXECUTION ABNORMALLY TERMINATED AT PC: 0x%x\nREASON: ", last_pc);
+        printf("\n\n===== ERROR =====\n");
+        printf("EXECUTION ABNORMALLY TERMINATED AT PC: 0x%x / %d\n", last_pc, last_pc);
+        printf("REASON: ");
         switch (exit_code) {
             case STACK_OVERFLOW_ERROR:
                 printf("STACK OVERFLOW\n");
