@@ -28,10 +28,13 @@
 #define PUTC 14
 #define JNZ 15
 #define DUP 16
+#define STORE 17
+#define LOAD 18
 
 typedef struct {
     uint8_t stack[256];
     uint8_t program[256];
+    uint8_t memory[256];
     uint8_t stack_pointer;
     uint8_t pc;
 } vm_state;
@@ -44,6 +47,14 @@ int push(vm_state *vm, uint8_t byte) {
     vm->stack_pointer++;
 
     return 0;
+}
+
+uint8_t load(vm_state *vm, uint8_t idx) {
+    return vm->memory[idx];
+}
+
+void store(vm_state *vm, uint8_t idx, uint8_t byte) {
+    vm->memory[idx] = byte;
 }
 
 int pop(vm_state *vm, uint8_t *byte) {
@@ -235,6 +246,31 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 if (code)
                     return code;
 
+                break;
+
+            case STORE:
+                uint8_t address = vm->program[vm->pc + 1];
+
+                code = pop(vm, &x);
+                if (code)
+                    return code;
+
+                store(vm, address, x);
+                vm->pc++;
+                break;
+
+            case LOAD:
+                uint8_t address = vm->program[vm->pc + 1];
+
+                code = pop(vm, &x);
+                if (code)
+                    return code;
+
+                code = push(vm, load(vm, address));
+                if (code)
+                    return code;
+
+                vm->pc++;
                 break;
 
             case HALT: return 0;
