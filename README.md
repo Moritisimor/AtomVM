@@ -2,9 +2,9 @@
 A really tiny 8-bit based Virtual Machine written in C
 
 ## Current Status
-Currently, the VM is rather buggy. This is because I am not particularly good at C.
+Currently, the VM may contain some bugs. This is because I am not particularly good at C.
 
-If anyone would like to contribute by cleaning up code or fixing bugs, you are more than welcome to.
+If anyone would like to contribute by cleaning up code, fixing bugs or anything at all, I would be more than grateful for it.
 
 ## What is this project about?
 AtomVM is a simple, small but very fast Virtual Machine. 
