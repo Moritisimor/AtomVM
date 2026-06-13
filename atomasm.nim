@@ -1,6 +1,23 @@
 import std/cmdline
 import std/strutils
+import std/strformat
 import std/tables
+
+proc tokenize(lines: seq[string]): seq[string] =
+  var tokens: seq[string] = @[]
+  for line in lines:
+    let strippedLine = line.strip()
+    if strippedLine == "" or strippedLine.startsWith(";"):
+      continue
+
+    let subTokens = strutils.splitWhitespace(strippedLine, -1)
+    for subToken in subTokens:
+      if subToken.startsWith(";"):
+        break
+
+      tokens.add(subToken)
+
+  return tokens    
 
 proc gatherLabels(tokens: seq[string]): TableRef[string, int] =
   var labels = newTable[string, int]()
@@ -20,21 +37,22 @@ proc tokensToByteCode(tokens: seq[string], labels: TableRef): seq[byte] =
   var bytes: seq[byte] = @[]
 
   for token in tokens:
-    if token.toLower().startsWith("label"):
-      idx += 1
-      continue
-
     if ignorable.contains(idx):
       idx += 1
       continue
 
     case token.toLower() 
+      of "label":
+        ignorable.add(idx + 1)
+
       of "halt":
         bytes.add(0x0)
 
       of "push":
         bytes.add(0x1)
         let next = tokens[idx + 1]
+        ignorable.add(idx + 1)
+
         let val = parseInt(next)
         if val < 0 or val > 255:
           raise newException(Exception, "Value of immediate does not fit in a byte")
@@ -65,31 +83,37 @@ proc tokensToByteCode(tokens: seq[string], labels: TableRef): seq[byte] =
       of "jmp":
         bytes.add(0x7)
         let next = tokens[idx + 1]
+        ignorable.add(idx + 1)
         bytes.add(cast[byte](labels[next]))
 
       of "jig":
         bytes.add(0x8)
         let next = tokens[idx + 1]
+        ignorable.add(idx + 1)
         bytes.add(cast[byte](labels[next]))
 
       of "jis":
         bytes.add(0xa)
         let next = tokens[idx + 1]
+        ignorable.add(idx + 1)
         bytes.add(cast[byte](labels[next]))
 
       of "jie":
         bytes.add(0x9)
         let next = tokens[idx + 1]
+        ignorable.add(idx + 1)
         bytes.add(cast[byte](labels[next]))
 
       of "jiz":
         bytes.add(0xb)
         let next = tokens[idx + 1]
+        ignorable.add(idx + 1)
         bytes.add(cast[byte](labels[next]))
 
       of "jne":
         bytes.add(0xc)
         let next = tokens[idx + 1]
+        ignorable.add(idx + 1)
         bytes.add(cast[byte](labels[next]))
 
       of "dup":
@@ -98,6 +122,7 @@ proc tokensToByteCode(tokens: seq[string], labels: TableRef): seq[byte] =
       of "store":
         bytes.add(0x11)
         let next = tokens[idx + 1]
+        ignorable.add(idx + 1)
         let val = parseInt(next)
         if val < 0 or val > 255:
           raise newException(Exception, "Value of immediate does not fit in a byte")
@@ -107,11 +132,15 @@ proc tokensToByteCode(tokens: seq[string], labels: TableRef): seq[byte] =
       of "load":
         bytes.add(0x12)
         let next = tokens[idx + 1]
+        ignorable.add(idx + 1)
         let val = parseInt(next)
         if val < 0 or val > 255:
           raise newException(Exception, "Value of immediate does not fit in a byte")
         else:
           bytes.add(cast[byte](val))
+
+      else:
+        raise newException(Exception, fmt"Unknown Mnemonic: {token}")
 
     idx += 1
 
@@ -134,14 +163,14 @@ proc main(args: seq[string]): int =
     echo "Could not open input file"
     return 1
 
-  let tokens = strutils.splitWhitespace(content, -1)
+  let tokens = atomasm.tokenize(strutils.splitLines(content))
   let labels = gatherLabels(tokens)
 
   try:
     let bytes = tokensToByteCode(tokens, labels)
     writeFile(output_path, bytes)
   except Exception as e:
-    echo "Error while generating bytecode/writing to file: " .. e.msg
+    echo "Error while generating bytecode/writing to file: ", e.msg
     return 1
 
   return 0
