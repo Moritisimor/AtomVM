@@ -110,13 +110,13 @@ int fetch_decode_exec_loop(vm_state *vm) {
 
                 uint8_t result;
                 if (opcode == ADD) 
-                    result = x + y;
+                    result = y + x;
                 else if (opcode == SUB)
-                    result = x - y;
+                    result = y - x;
                 else if (opcode == MUL)
-                    result = x * y;
+                    result = y * x;
                 else
-                    result = x / y;
+                    result = y / x;
 
                 code = push(vm, result);
                 if (code)
@@ -177,7 +177,7 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 if (code)
                     return code;
 
-                if (x > y)
+                if (y > x)
                     vm->pc = jmp_target;
                 else
                     vm->pc += 2;
@@ -195,7 +195,7 @@ int fetch_decode_exec_loop(vm_state *vm) {
                 if (code)
                     return code;
 
-                if (x < y)
+                if (y < x)
                     vm->pc = jmp_target;
                 else
                     vm->pc += 2;
