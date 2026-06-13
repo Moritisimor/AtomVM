@@ -249,21 +249,17 @@ int fetch_decode_exec_loop(vm_state *vm) {
                     return code;
 
                 store(vm, address, x);
-                vm->pc++;
+                vm->pc += 2;
                 break;
 
             case LOAD:
                 address = vm->program[vm->pc + 1];
 
-                code = pop(vm, &x);
-                if (code)
-                    return code;
-
                 code = push(vm, load(vm, address));
                 if (code)
                     return code;
 
-                vm->pc++;
+                vm->pc += 2;
                 break;
 
             case HALT: return 0;
