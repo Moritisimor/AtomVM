@@ -49,7 +49,7 @@ The second 2 bytes do the same thing.
 
 The 5th byte, `0x03`, adds the top 2 values of the stack.
 
-The 6th byte, `0x0d`, prints the top value of the stack to the console as a number. It only peeks, meaning the element is not topped and remains on the stack.
+The 6th byte, `0x0d`, prints the top value of the stack to the console as a number. It only peeks, meaning the element is not popped, and remains on the stack.
 
 The 7th and 8th byte, once again, push something to the stack. This time it's the value `0x0a`. This is the ASCII code for newline.
 
