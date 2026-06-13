@@ -90,9 +90,6 @@ proc main(args: seq[string]): int =
 
   let tokens = strutils.splitWhitespace(content, -1)
   let labels = gatherLabels(tokens)
-  for k, v in labels:
-    echo k
-    echo v
 
   try:
     let bytes = tokensToByteCode(tokens, labels)
