@@ -16,7 +16,6 @@ A stack-based 8-bit virtual machine for the **Quantum** programming language, wr
 
 ```bash
 make all          # build VM + assembler
-make test         # run test suite (45+ tests)
 make lint         # check C code with -Werror
 
 ./atomasm hello_world.asm hello.bc   # assemble
@@ -177,7 +176,6 @@ label loop
 make all        # VM + assembler
 make vm         # C VM only
 make asm        # Nim assembler only
-make test       # full test suite
 make lint       # C lint with -Werror
 make clean      # remove build artifacts
 ```
