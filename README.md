@@ -1,4 +1,4 @@
-# Quantum VM
+# Atom VM
 
 A stack-based 8-bit virtual machine for the **Quantum** programming language, written in C with an assembler (QASM) in Nim.
 
