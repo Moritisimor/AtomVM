@@ -1,6 +1,8 @@
 # Build artifacts
 atomvm
 atomasm
+ql
+*.o
 atomasm.exe
 *.exe
 *.dll

@@ -8,18 +8,20 @@ VM_SRCS  := $(SRC_DIR)/vm.c $(SRC_DIR)/main.c
 VM_OBJS  := $(VM_SRCS:.c=.o)
 VM_BIN   := atomvm
 ASM_BIN  := atomasm
+QL_BIN   := ql
+QL_SRCS  := $(SRC_DIR)/ql.nim $(wildcard $(SRC_DIR)/ql/*.nim)
 
 UNAME_S := $(shell uname -s)
 
 ifneq (,$(filter $(UNAME_S),Linux Darwin))
-    ASM_EXT :=
+    NIM_EXT :=
 else
-    ASM_EXT := .exe
+    NIM_EXT := .exe
 endif
 
-.PHONY: all vm asm test lint clean
+.PHONY: all vm asm qlc test lint clean
 
-all: vm asm
+all: vm asm qlc
 
 vm: $(VM_BIN)
 
@@ -34,6 +36,11 @@ asm: $(ASM_BIN)
 $(ASM_BIN): $(SRC_DIR)/atomasm.nim
 	$(NIM) c $(NIMFLAGS) --outDir:. --hints:off --verbosity:0 $<
 
+qlc: $(QL_BIN)
+
+$(QL_BIN): $(QL_SRCS)
+	$(NIM) c $(NIMFLAGS) --outDir:. --hints:off --verbosity:0 $<
+
 test: all
 	./tests/run_tests.sh
 
@@ -42,6 +49,7 @@ lint: vm
 	$(CC) $(CFLAGS) -Werror -c -o /dev/null $(SRC_DIR)/main.c
 
 clean:
-	rm -f $(VM_BIN) $(ASM_BIN) $(ASM_BIN)$(ASM_EXT)
+	rm -f $(VM_BIN) $(ASM_BIN) $(ASM_BIN)$(NIM_EXT)
+	rm -f $(QL_BIN) $(QL_BIN)$(NIM_EXT)
 	rm -f $(SRC_DIR)/*.o
 	rm -rf nimcache

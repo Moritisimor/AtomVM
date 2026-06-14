@@ -1,6 +1,6 @@
 # Atom VM
 
-A stack-based 8-bit virtual machine for the **Quantum** programming language, written in C with an assembler (QASM) in Nim.
+A stack-based 8-bit virtual machine for the **Quantum** programming language, written in C with an assembler (QASM) and QuantumLang compiler in Nim.
 
 ## Features
 
@@ -11,17 +11,41 @@ A stack-based 8-bit virtual machine for the **Quantum** programming language, wr
 - **16-bit addressing** via JMP16, CALL16, PUSH16 extensions
 - **Full error checking** — stack overflow/underflow, division by zero, bounds checks
 - **Assembler (QASM)** — with label resolution, hex literals, error reporting
+- **[QuantumLang](docs/language.md)** — high-level language that compiles to VM bytecode
+- **Core library** — I/O, math, string, memory, and system builtins documented in `docs/stdlib.md`
 
 ## Quick Start
 
 ```bash
-make all          # build VM + assembler
-make test         # run test suite (62 tests)
+make all          # build VM + assembler + QuantumLang compiler
+make test         # run test suite (88 tests)
 make lint         # check C code with -Werror
 
 ./atomasm hello_world.asm hello.bc   # assemble
 ./atomvm hello.bc                     # run
+
+./ql build examples/hello.ql -o hello.bc  # compile QuantumLang
+./atomvm hello.bc                     # run QuantumLang bytecode
+./ql run examples/hello.ql            # compile and run in one command
 ```
+
+## Command Line Tools
+
+```bash
+atomvm --help
+atomvm --info program.bc
+atomvm --stats program.bc
+atomvm program.bc
+
+atomasm program.asm -o program.bc
+
+ql build program.ql -o program.bc
+ql check program.ql
+ql run program.ql
+ql program.ql program.bc              # old positional form still works
+```
+
+QuantumLang follows the same broad workflow as Java: source code compiles to portable VM bytecode (`.bc`), then `atomvm` executes that bytecode.
 
 ## Example
 
@@ -103,6 +127,15 @@ label loop
 | 30 | `fetch` | — | addr → val | Push memory[addr] |
 | 31 | `storei` | — | val addr → | Pop value to memory[addr] |
 | 32 | `fill` | count addr16 | val → | Fill count bytes with val at addr |
+| 33 | `fetch16` | — | addr_hi addr_lo → val | Push memory[addr] |
+| 34 | `storei16` | — | val addr_hi addr_lo → | Store byte to memory[addr] |
+| 35 | `putsn` | — | addr_hi addr_lo len → | Print len bytes from memory |
+| 36 | `strcmp` | — | a_hi a_lo b_hi b_lo → cmp | Compare null-terminated strings |
+| 37 | `alloc` | — | size → addr_hi addr_lo | Allocate zeroed heap bytes |
+| 38 | `aget` | — | addr_hi addr_lo index → val | Read array element |
+| 39 | `alen` | — | addr_hi addr_lo → len | Read array length |
+| 3A | `loadrel` | — | addr_hi addr_lo offset → val | Read byte at addr + offset |
+| 3B | `aset` | — | addr_hi addr_lo index val → | Write array element |
 
 ### Control Flow
 
@@ -124,6 +157,10 @@ label loop
 | 51 | `cr` | — | Print newline |
 | 52 | `space` | — | Print space |
 | 53 | `key` | → char | Read one byte from stdin |
+| 54 | `puts` | addr_hi addr_lo → | Print null-terminated string from memory |
+| 55 | `strlen` | addr_hi addr_lo → len_hi len_lo | Push null-terminated string length |
+| 56 | `putc_pop` | val → | Pop and print as char |
+| 57 | `putn_pop` | val → | Pop and print as number |
 
 ### System
 
@@ -174,15 +211,20 @@ label loop
 ## Building
 
 ```bash
-make all        # VM + assembler
+make all        # VM + assembler + QuantumLang compiler
 make vm         # C VM only
 make asm        # Nim assembler only
-make test       # full test suite (62 tests)
+make qlc        # QuantumLang compiler only
+make test       # full test suite (88 tests)
 make lint       # C lint with -Werror
 make clean      # remove build artifacts
 ```
 
 Requires a C99 compiler and [Nim](https://nim-lang.org/) 2.0+.
+
+## QuantumLang Status
+
+The compiler is organized as lexer/token, AST, parser, codegen, and CLI modules under `src/ql/`. The currently supported language is intentionally smaller than the design document: functions, import source loading with `module::symbol` aliases, `let`/`mut`/`const`, immutable binding checks, byte arrays, simple records, enum-style ADTs, heap allocation, arithmetic, comparisons, `if`, `while`, counted `for`, `break`, `continue`, compound assignment, simple `case`, byte/char/string literals, literal string concatenation, assertions, memory access, string helpers, and the core library in [`docs/stdlib.md`](docs/stdlib.md) are ready to use.
 
 ## License
 

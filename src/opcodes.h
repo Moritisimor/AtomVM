@@ -58,6 +58,15 @@ typedef enum {
     FETCH   = 0x30,  /* (addr -- val)  Push memory[addr] */
     STOREI  = 0x31,  /* (val addr -- )  Pop value to memory[addr] */
     FILL    = 0x32,  /* (val -- )  Fill n bytes with val from addr (2 imm: addr n) */
+    FETCH16 = 0x33,  /* (addr_hi addr_lo -- val)  Push memory[addr] */
+    STOREI16 = 0x34, /* (val addr_hi addr_lo -- )  Store byte to memory[addr] */
+    PUTSN   = 0x35,  /* (addr_hi addr_lo len -- )  Print len bytes from memory[addr] */
+    STRCMP  = 0x36,  /* (a_hi a_lo b_hi b_lo -- cmp)  Compare null-terminated strings */
+    ALLOC   = 0x37,  /* (size -- addr_hi addr_lo)  Allocate bytes from VM heap */
+    AGET    = 0x38,  /* (addr_hi addr_lo index -- val)  Read array byte at index */
+    ALEN    = 0x39,  /* (addr_hi addr_lo -- len)  Read array length byte */
+    LOADREL = 0x3A,  /* (addr_hi addr_lo offset -- val)  Read byte at addr + offset */
+    ASET    = 0x3B,  /* (addr_hi addr_lo index val -- )  Write array byte at index */
 
     /* Control flow */
     CALL    = 0x40,  /* ( -- )  Call subroutine at 1-byte address */
@@ -73,6 +82,10 @@ typedef enum {
     CR      = 0x51,  /* ( -- )  Print newline */
     SPACE   = 0x52,  /* ( -- )  Print space */
     KEY     = 0x53,  /* ( -- char)  Read one byte from stdin */
+    PUTS    = 0x54,  /* (addr hi lo -- )  Print null-terminated string from memory[addr] */
+    STRLEN  = 0x55,  /* (addr hi lo -- len)  Push length of null-terminated string */
+    PUTC_POP = 0x56, /* (val -- )  Pop and print as char */
+    PUTN_POP = 0x57, /* (val -- )  Pop and print as number */
 
     /* System */
     DDEPTH  = 0x60,  /* ( -- depth)  Push data stack depth (alias for DEPTH) */

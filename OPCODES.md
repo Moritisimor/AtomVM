@@ -94,6 +94,25 @@ push 0x20
 div ; 0x20 / 0x10 = 0x2
 ```
 
+## Recent Memory And String Opcodes
+
+These opcodes support the high-level QuantumLang standard library and are available in QASM.
+
+| Opcode | Hex | Stack Effect | Description |
+|--------|-----|--------------|-------------|
+| `fetch16` | `0x33` | `addr_hi addr_lo -- val` | Read one byte from a 16-bit memory address. |
+| `storei16` | `0x34` | `val addr_hi addr_lo --` | Store one byte to a 16-bit memory address. |
+| `putsn` | `0x35` | `addr_hi addr_lo len --` | Print exactly `len` bytes from memory. |
+| `strcmp` | `0x36` | `a_hi a_lo b_hi b_lo -- cmp` | Compare two null-terminated strings. |
+| `alloc` | `0x37` | `size -- addr_hi addr_lo` | Allocate zeroed bytes from the VM heap. |
+| `aget` | `0x38` | `addr_hi addr_lo index -- val` | Read an array element. |
+| `alen` | `0x39` | `addr_hi addr_lo -- len` | Read an array length byte. |
+| `loadrel` | `0x3A` | `addr_hi addr_lo offset -- val` | Read a byte relative to a base address. |
+| `aset` | `0x3B` | `addr_hi addr_lo index val --` | Write an array element. |
+| `strlen` | `0x55` | `addr_hi addr_lo -- len_hi len_lo` | Push the length of a null-terminated string. |
+| `putc_pop` | `0x56` | `val --` | Pop and print one character. |
+| `putn_pop` | `0x57` | `val --` | Pop and print one number. |
+
 ## JMP
 Value: 0x7 / 7
 

@@ -1,7 +1,22 @@
 import std/cmdline
+import std/os
 import std/strutils
 import std/strformat
 import std/tables
+import std/terminal
+
+const AsmVersion = "0.4.0"
+
+type ColorMode = enum cmAuto, cmAlways, cmNever
+
+proc wantsColor(mode: ColorMode): bool =
+  case mode
+  of cmAlways: true
+  of cmNever: false
+  of cmAuto: getEnv("NO_COLOR") == "" and isatty(stderr)
+
+proc paint(enabled: bool, code, text: string): string =
+  if enabled: "\e[" & code & "m" & text & "\e[0m" else: text
 
 type
   AssemblerError = object of CatchableError
@@ -79,12 +94,25 @@ proc instrInfo(mnemonic: string): InstrInfo =
     of "depth":     return InstrInfo(opcode: 0x28, argBytes: 0, tokensConsumed: 1)
     of "fetch":     return InstrInfo(opcode: 0x30, argBytes: 0, tokensConsumed: 1)
     of "storei":    return InstrInfo(opcode: 0x31, argBytes: 0, tokensConsumed: 1)
+    of "fetch16":   return InstrInfo(opcode: 0x33, argBytes: 0, tokensConsumed: 1)
+    of "storei16":  return InstrInfo(opcode: 0x34, argBytes: 0, tokensConsumed: 1)
+    of "putsn":     return InstrInfo(opcode: 0x35, argBytes: 0, tokensConsumed: 1)
+    of "strcmp":    return InstrInfo(opcode: 0x36, argBytes: 0, tokensConsumed: 1)
+    of "alloc":     return InstrInfo(opcode: 0x37, argBytes: 0, tokensConsumed: 1)
+    of "aget":      return InstrInfo(opcode: 0x38, argBytes: 0, tokensConsumed: 1)
+    of "alen":      return InstrInfo(opcode: 0x39, argBytes: 0, tokensConsumed: 1)
+    of "loadrel":   return InstrInfo(opcode: 0x3A, argBytes: 0, tokensConsumed: 1)
+    of "aset":      return InstrInfo(opcode: 0x3B, argBytes: 0, tokensConsumed: 1)
     of "ret":       return InstrInfo(opcode: 0x41, argBytes: 0, tokensConsumed: 1)
     of "execute":   return InstrInfo(opcode: 0x42, argBytes: 0, tokensConsumed: 1)
     of "emit":      return InstrInfo(opcode: 0x50, argBytes: 0, tokensConsumed: 1)
     of "cr":        return InstrInfo(opcode: 0x51, argBytes: 0, tokensConsumed: 1)
     of "space":     return InstrInfo(opcode: 0x52, argBytes: 0, tokensConsumed: 1)
     of "key":       return InstrInfo(opcode: 0x53, argBytes: 0, tokensConsumed: 1)
+    of "puts":      return InstrInfo(opcode: 0x54, argBytes: 0, tokensConsumed: 1)
+    of "strlen":    return InstrInfo(opcode: 0x55, argBytes: 0, tokensConsumed: 1)
+    of "putc_pop":  return InstrInfo(opcode: 0x56, argBytes: 0, tokensConsumed: 1)
+    of "putn_pop":  return InstrInfo(opcode: 0x57, argBytes: 0, tokensConsumed: 1)
     of "ddepth":    return InstrInfo(opcode: 0x60, argBytes: 0, tokensConsumed: 1)
     of "rdepth":    return InstrInfo(opcode: 0x61, argBytes: 0, tokensConsumed: 1)
     of "msize":     return InstrInfo(opcode: 0x62, argBytes: 0, tokensConsumed: 1)
@@ -111,6 +139,19 @@ proc instrInfo(mnemonic: string): InstrInfo =
     of "fill":      return InstrInfo(opcode: 0x32, argBytes: 0, tokensConsumed: 3)
     else:
       raise newException(AssemblerError, fmt"Unknown mnemonic: '{mnemonic}'")
+
+proc printHelp() =
+  echo "AtomASM " & AsmVersion
+  echo "Usage:"
+  echo "  atomasm [options] <input.asm> -o <output.bc>"
+  echo "  atomasm <input.asm> <output.bc>"
+  echo ""
+  echo "Options:"
+  echo "  -o, --output <file>  Output bytecode path"
+  echo "  --color <mode>       Color output: auto, always, never"
+  echo "  -h, --help           Show this help text"
+  echo "  -V, --version        Print version information"
+  echo "  --quiet              Do not print success output"
 
 
 proc computeByteOffsets(tokens: seq[string]): seq[int] =
@@ -241,18 +282,63 @@ proc tokensToByteCode(tokens: seq[string], labels: TableRef): seq[byte] =
 
 proc main(): int =
   let args = commandLineParams()
-  if args.len < 2:
-    echo "Usage: atomasm <input file> <output file>"
+  var input_path = ""
+  var output_path = ""
+  var quiet = false
+  var colors = cmAuto
+  var i = 0
+  while i < args.len:
+    case args[i]
+    of "-h", "--help":
+      printHelp()
+      return 0
+    of "-V", "--version":
+      echo "AtomASM " & AsmVersion
+      return 0
+    of "--quiet":
+      quiet = true
+    of "--color":
+      if i + 1 >= args.len:
+        stderr.writeLine("atomasm: error: expected mode after --color")
+        return 1
+      inc i
+      case args[i]
+      of "auto": colors = cmAuto
+      of "always": colors = cmAlways
+      of "never": colors = cmNever
+      else:
+        stderr.writeLine("atomasm: error: invalid color mode '" & args[i] & "'")
+        return 1
+    of "-o", "--output":
+      if i + 1 >= args.len:
+        stderr.writeLine("atomasm: error: expected path after " & args[i])
+        return 1
+      inc i
+      output_path = args[i]
+    else:
+      if args[i].startsWith("-"):
+        stderr.writeLine("atomasm: error: unknown option '" & args[i] & "'")
+        stderr.writeLine("Try 'atomasm --help'.")
+        return 1
+      elif input_path == "":
+        input_path = args[i]
+      elif output_path == "":
+        output_path = args[i]
+      else:
+        stderr.writeLine("atomasm: error: unexpected argument '" & args[i] & "'")
+        return 1
+    inc i
+
+  if input_path == "" or output_path == "":
+    printHelp()
     return 1
 
-  let input_path = args[0]
-  let output_path = args[1]
   var content: string
 
   try:
     content = readFile(input_path)
   except IOError:
-    echo fmt"Error: could not open input file '{input_path}'"
+    stderr.writeLine(fmt"atomasm: error: could not open input file '{input_path}'")
     return 1
 
   let tokens = atomasm.tokenize(strutils.splitLines(content))
@@ -261,24 +347,30 @@ proc main(): int =
   try:
     byteOffsets = computeByteOffsets(tokens)
   except AssemblerError as e:
-    echo fmt"Error: {e.msg}"
+    stderr.writeLine(fmt"atomasm: error: {e.msg}")
     return 1
 
   var labels: TableRef[string, int]
   try:
     labels = gatherLabels(tokens, byteOffsets)
   except AssemblerError as e:
-    echo fmt"Error (label phase): {e.msg}"
+    stderr.writeLine(fmt"atomasm: error: {e.msg}")
     return 1
 
   try:
     let bytes = tokensToByteCode(tokens, labels)
-    writeFile(output_path, bytes)
+    let size = bytes.len
+    var outBytes = @[byte((size shr 8) and 0xFF), byte(size and 0xFF)]
+    outBytes.add(bytes)
+    writeFile(output_path, outBytes)
+    if not quiet:
+      let color = wantsColor(colors)
+      stderr.writeLine(paint(color, "1;32", "OK") & fmt" wrote {output_path} ({size} code bytes)")
   except AssemblerError as e:
-    echo fmt"Error while generating bytecode: {e.msg}"
+    stderr.writeLine(fmt"atomasm: error: {e.msg}")
     return 1
   except IOError as e:
-    echo fmt"Error: could not write to output file '{output_path}': {e.msg}"
+    stderr.writeLine(fmt"atomasm: error: could not write to output file '{output_path}': {e.msg}")
     return 1
 
   return 0

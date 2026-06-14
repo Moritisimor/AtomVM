@@ -1,0 +1,245 @@
+(*
+  QuantumLang implemented-core grammar
+  ISO/IEC 14977-style EBNF.
+
+  This file tracks the syntax accepted by the compiler in src/ql/.
+  The language design document may discuss future features; those are not
+  included here until the compiler accepts them.
+*)
+
+QuantumLang
+  = { TopLevelItem } EOF ;
+
+TopLevelItem
+  = FunctionDecl
+  | ImportDecl
+  | TypeDecl
+  | BindingDecl
+  | Expression
+  ;
+
+ImportDecl
+  = "import" StringLiteral ;
+
+FunctionDecl
+  = "fn" Identifier "(" [ ParameterList ] ")" [ "->" TypeRef ] Block ;
+
+ParameterList
+  = Parameter { "," Parameter } ;
+
+Parameter
+  = Identifier [ "::" TypeRef ] ;
+
+BindingDecl
+  = ( "let" | "mut" | "const" ) Identifier [ "::" TypeRef ] [ "=" Expression ] ;
+
+TypeRef
+  = Identifier ;
+
+TypeDecl
+  = "type" Identifier ( RecordBody | EnumBody ) ;
+
+RecordBody
+  = "{" { FieldDecl [ "," ] } "}" ;
+
+EnumBody
+  = "=" [ "|" ] Identifier { "|" Identifier } ;
+
+FieldDecl
+  = Identifier "::" TypeRef ;
+
+Block
+  = "{" { Statement [ ";" ] } "}" ;
+
+Statement
+  = BindingDecl
+  | ReturnStmt
+  | BreakStmt
+  | ContinueStmt
+  | Expression
+  ;
+
+ReturnStmt
+  = "return" [ Expression ] ;
+
+BreakStmt
+  = "break" ;
+
+ContinueStmt
+  = "continue" ;
+
+Expression
+  = PipeExpr ;
+
+PipeExpr
+  = AssignmentExpr [ "|>" PipeExpr ] ;
+
+AssignmentExpr
+  = LogicalOrExpr [ AssignmentOperator AssignmentExpr ] ;
+
+AssignmentOperator
+  = "=" | "+=" | "-=" | "*=" | "/=" | "%=" ;
+
+LogicalOrExpr
+  = LogicalAndExpr { "or" LogicalAndExpr } ;
+
+LogicalAndExpr
+  = ComparisonExpr { "and" ComparisonExpr } ;
+
+ComparisonExpr
+  = BitwiseOrExpr { ComparisonOperator BitwiseOrExpr } ;
+
+ComparisonOperator
+  = "==" | "!=" | "<" | ">" | "<=" | ">=" ;
+
+BitwiseOrExpr
+  = BitwiseXorExpr { "|" BitwiseXorExpr } ;
+
+BitwiseXorExpr
+  = BitwiseAndExpr { "^" BitwiseAndExpr } ;
+
+BitwiseAndExpr
+  = ShiftExpr { "&" ShiftExpr } ;
+
+ShiftExpr
+  = AddExpr { ( "<<" | ">>" ) AddExpr } ;
+
+AddExpr
+  = MulExpr { ( "+" | "-" ) MulExpr } ;
+
+MulExpr
+  = UnaryExpr { ( "*" | "/" | "%" ) UnaryExpr } ;
+
+UnaryExpr
+  = ( "-" | "!" | "not" | "~" ) UnaryExpr
+  | PostfixExpr
+  ;
+
+PostfixExpr
+  = PrimaryExpr { PostfixOperator } ;
+
+PostfixOperator
+  = "(" [ ArgumentList ] ")"
+  | "." Identifier
+  | "[" Expression "]"
+  ;
+
+ArgumentList
+  = Expression { "," Expression } ;
+
+PrimaryExpr
+  = Literal
+  | ArrayLiteral
+  | StructLiteral
+  | Identifier
+  | "(" Expression ")"
+  | Block
+  | IfExpr
+  | WhileExpr
+  | ForExpr
+  | CaseExpr
+  | ReturnStmt
+  | BreakStmt
+  | ContinueStmt
+  ;
+
+ArrayLiteral
+  = "[" [ Expression { "," Expression } [ "," ] ] "]" ;
+
+StructLiteral
+  = Identifier "{" [ StructField { "," StructField } [ "," ] ] "}" ;
+
+StructField
+  = Identifier ":" Expression ;
+
+IfExpr
+  = "if" Expression Block [ "else" ( IfExpr | Block ) ] ;
+
+WhileExpr
+  = "while" Expression Block ;
+
+ForExpr
+  = "for" Identifier "in" Expression ".." Expression Block ;
+
+CaseExpr
+  = "case" Expression "{" { CaseArm } "}" ;
+
+CaseArm
+  = [ "|" ] Pattern [ "if" Expression ] "=>" Expression ;
+
+Pattern
+  = IntLiteral
+  | Identifier
+  | "_"
+  ;
+
+Literal
+  = IntLiteral
+  | StringLiteral
+  | CharLiteral
+  | BoolLiteral
+  | NilLiteral
+  ;
+
+BoolLiteral
+  = "true" | "false" ;
+
+NilLiteral
+  = "nil" ;
+
+IntLiteral
+  = DecimalLiteral | HexLiteral | OctalLiteral | BinaryLiteral ;
+
+DecimalLiteral
+  = Digit { Digit } ;
+
+HexLiteral
+  = "0x" HexDigit { HexDigit } ;
+
+OctalLiteral
+  = "0o" OctalDigit { OctalDigit } ;
+
+BinaryLiteral
+  = "0b" BinaryDigit { BinaryDigit } ;
+
+StringLiteral
+  = '"' { StringCharacter | EscapeSequence } '"' ;
+
+CharLiteral
+  = "'" ( Character | EscapeSequence ) "'" ;
+
+Identifier
+  = QualifiedIdentifier ;
+
+QualifiedIdentifier
+  = SimpleIdentifier { "::" SimpleIdentifier } ;
+
+SimpleIdentifier
+  = Letter { Letter | Digit | "_" } ;
+
+Letter
+  = "A" | ... | "Z" | "a" | ... | "z" | "_" ;
+
+Digit
+  = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+
+HexDigit
+  = Digit | "A" | "B" | "C" | "D" | "E" | "F" | "a" | "b" | "c" | "d" | "e" | "f" ;
+
+OctalDigit
+  = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" ;
+
+BinaryDigit
+  = "0" | "1" ;
+
+EscapeSequence
+  = "\\" ( "n" | "t" | "0" | "\\" | "'" | '"' ) ;
+
+StringCharacter
+  = ? any source character except double quote, backslash, or line break ? ;
+
+Character
+  = ? any source character except single quote, backslash, or line break ? ;
+
+EOF
+  = ? end of file ? ;
