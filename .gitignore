@@ -1,2 +1,26 @@
+# Build artifacts
+atomvm
+atomasm
+atomasm.exe
 *.exe
 *.dll
+
+# Nim build artifacts
+nimcache/
+nimbledata.json
+*.json
+
+# OS artifacts
+.DS_Store
+Thumbs.db
+
+# Test outputs
+tests/*.actual
+tests/*.diff
+
+# Editor/IDE
+*.swp
+*.swo
+*~
+.vscode/
+.idea/

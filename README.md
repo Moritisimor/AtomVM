@@ -1,77 +1,189 @@
-# AtomVM
-A really tiny 8-bit based Virtual Machine written in C
+# Quantum VM
 
-## Current Status
-Currently, the VM may contain some bugs. This is because I am not particularly good at C.
+A stack-based 8-bit virtual machine for the **Quantum** programming language, written in C with an assembler (QASM) in Nim.
 
-If anyone would like to contribute by cleaning up code, fixing bugs or anything at all, I would be more than grateful for it.
+## Features
 
-## What is this project about?
-AtomVM is a simple, small but very fast Virtual Machine. 
+- **50+ opcodes** — arithmetic, bitwise, stack, memory, control flow, I/O
+- **Dual stack** — data stack (2048 bytes) + return stack (256 entries) for subroutine support
+- **4 KB program space** (4096 bytes)
+- **4 KB data memory** (4096 bytes)
+- **16-bit addressing** via JMP16, CALL16, PUSH16 extensions
+- **Full error checking** — stack overflow/underflow, division by zero, bounds checks
+- **Assembler (QASM)** — with label resolution, hex literals, error reporting
 
-It is 8-bit based, meaning that it is very limited, but also that it is architecturally very simple and small.
+## Quick Start
 
-AtomVM is also stack-based, meaning it uses push and pop for operating on the stack.
+```bash
+make all          # build VM + assembler
+make test         # run test suite (45+ tests)
+make lint         # check C code with -Werror
 
-It is not entirely finished yet, but in a usable state.
+./atomasm hello_world.asm hello.bc   # assemble
+./atomvm hello.bc                     # run
+```
 
-## What does the project consist of?
-As of right now, the project consists of the Virtual Machine itself, which is written in C, and a small assembler, which is written in Nim.
+## Example
 
-## What does the assembly look like?
-Here's a small example of a program, which is written in AtomASM, and can thus be assembled for the AtomVM:
 ```asm
-; This program simply counts from 0 to 255 in an infinite loop, overflowing when it goes beyond 255.
+; Count from 2 to 255
 push 1
 label loop
     push 1
     add
     putn
-    push 10 ; Newline
+    push 10
     putc
     pop
-
     jmp loop
 ```
 
-Comments are written with `;`, so anything that comes after `;` is ignored by the tokenizer.
+## Opcode Reference
 
-Labels are simply declared using the `label` keyword, followed by the identifier.
+### Core (backward compatible)
 
-## What does the bytecode look like?
-[Hexflex's](https://github.com/Moritisimor/hexflex) output for this program looks like this:
-```
-0x00000000: 0x01 0x01 0x01 0x01 0x03 0x0d 0x01 0x0a |........|
-0x00000008: 0x0e 0x02 0x07 0x02 |....|
-```
+| Hex | Mnemonic | Operand | Stack Effect | Description |
+|-----|----------|---------|-------------|-------------|
+| 00 | `halt` | — | — | Stop execution |
+| 01 | `push` | byte | → val | Push immediate byte |
+| 02 | `pop` | — | val → | Pop and discard |
+| 03 | `add` | — | a b → sum | b + a |
+| 04 | `sub` | — | a b → diff | b − a |
+| 05 | `mul` | — | a b → prod | b × a |
+| 06 | `div` | — | a b → quot | b ÷ a |
+| 07 | `jmp` | addr | — | Unconditional jump |
+| 08 | `jig` | addr | a b → | Jump if b > a |
+| 09 | `jie` | addr | a b → | Jump if a == b |
+| 0A | `jis` | addr | a b → | Jump if b < a |
+| 0B | `jiz` | addr | a → | Jump if a == 0 |
+| 0C | `jne` | addr | a b → | Jump if a != b |
+| 0D | `putn` | — | val → val | Print as number (peek) |
+| 0E | `putc` | — | val → val | Print as char (peek) |
+| 0F | `jnz` | addr | a → | Jump if a != 0 |
+| 10 | `dup` | — | a → a a | Duplicate top |
+| 11 | `store` | addr | val → | Pop to memory[addr] |
+| 12 | `load` | addr | → val | Push memory[addr] |
 
-What a beautiful translation of assembly to bytecode!
+### Arithmetic Extensions
 
-### Explanation
-The first 2 bytes, `0x01` and `0x01` push the value 1 to the stack.
+| Hex | Mnemonic | Stack Effect | Description |
+|-----|----------|-------------|-------------|
+| 13 | `mod` | a b → rem | b % a |
+| 14 | `inc` | a → a+1 | Increment |
+| 15 | `dec` | a → a−1 | Decrement |
+| 16 | `neg` | a → −a | Two's complement negate |
+| 17 | `and` | a b → a&b | Bitwise AND |
+| 18 | `or` | a b → a\|b | Bitwise OR |
+| 19 | `xor` | a b → a^b | Bitwise XOR |
+| 1A | `not` | a → ~a | Bitwise NOT |
+| 1B | `shl` | a b → b<<a | Shift left by a |
+| 1C | `shr` | a b → b>>a | Shift right by a |
+| 1D | `min` | a b → min | Minimum |
+| 1E | `max` | a b → max | Maximum |
+| 1F | `cmp` | a b → −1\|0\|1 | Compare; −1 if b<a, 0 if ==, 1 if b>a |
 
-The second 2 bytes do the same thing.
+### Stack Manipulation
 
-The 5th byte, `0x03`, adds the top 2 values of the stack.
+| Hex | Mnemonic | Stack Effect | Description |
+|-----|----------|-------------|-------------|
+| 20 | `swap` | a b → b a | Swap top two |
+| 21 | `over` | a b → a b a | Copy second to top |
+| 22 | `rot` | a b c → b c a | Rotate top three |
+| 23 | `nip` | a b → b | Drop second |
+| 24 | `tuck` | a b → b a b | Copy top under second |
+| 25 | `dup2` | a b → a b a b | Duplicate top pair |
+| 26 | `drop2` | a b → | Drop top pair |
+| 27 | `swap2` | a b c d → c d a b | Swap top two pairs |
+| 28 | `depth` | → depth | Push stack depth |
 
-The 6th byte, `0x0d`, prints the top value of the stack to the console as a number. It only peeks, meaning the element is not popped, and remains on the stack.
+### Memory Operations
 
-The 7th and 8th byte, once again, push something to the stack. This time it's the value `0x0a`. This is the ASCII code for newline.
+| Hex | Mnemonic | Operand | Stack Effect | Description |
+|-----|----------|---------|-------------|-------------|
+| 30 | `fetch` | — | addr → val | Push memory[addr] |
+| 31 | `storei` | — | val addr → | Pop value to memory[addr] |
+| 32 | `fill` | count addr16 | val → | Fill count bytes with val at addr |
 
-The 9th byte, `0x0e`, prints the top value of the stack as a character, not as a number. Here, we effectively print a newline.
+### Control Flow
 
-The 10th byte, `0x02`, pops the top value of the stack, effectively discarding it. We no longer need the newline here.
+| Hex | Mnemonic | Operand | Description |
+|-----|----------|---------|-------------|
+| 40 | `call` | addr | Call subroutine (pushes return address) |
+| 41 | `ret` | — | Return from subroutine |
+| 42 | `execute` | — | Pop address from stack and jump |
+| 43 | `jgt` | addr | Jump if top > 0 (signed) |
+| 44 | `jlt` | addr | Jump if top < 0 (signed) |
+| 45 | `jeq` | addr | Jump if top == 0 |
+| 46 | `loop` | addr | Decrement loop counter on return stack, jump if not zero |
 
-The 11th and 12 byte compose an unconditional jump. Here, we jump to the 3rd byte, which lies at address `0x02`.
+### I/O
 
-## Compilation
-Since this project consists of more than one programming language, you will need a C compiler of your choice for the VM itself, and the [nim](https://nim-lang.org/)
- compiler for the assembler.
+| Hex | Mnemonic | Stack Effect | Description |
+|-----|----------|-------------|-------------|
+| 50 | `emit` | val → val | Print as char (alias for putc) |
+| 51 | `cr` | — | Print newline |
+| 52 | `space` | — | Print space |
+| 53 | `key` | → char | Read one byte from stdin |
 
-Here's a small shell script for cloning the repository and compiling the VM and Assembler:
+### System
+
+| Hex | Mnemonic | Stack Effect | Description |
+|-----|----------|-------------|-------------|
+| 60 | `ddepth` | → depth | Data stack depth (alias for depth) |
+| 61 | `rdepth` | → depth | Return stack depth |
+| 62 | `msize` | → size | Memory size (low byte) |
+| 63 | `state` | → flags | Push VM state flags |
+| 64 | `bye` | code → | Exit with code from stack |
+
+### 16-bit Extensions
+
+| Hex | Mnemonic | Operand | Stack Effect | Description |
+|-----|----------|---------|-------------|-------------|
+| 70 | `push16` | word(2) | → hi lo | Push 16-bit value (big-endian) |
+| 71 | `jmp16` | addr(2) | — | Jump to 16-bit address |
+| 72 | `call16` | addr(2) | — | Call 16-bit subroutine address |
+
+## Architecture
+
+| Component | Size | Notes |
+|-----------|------|-------|
+| Data stack | 2048 bytes | 8-bit values, 16-bit stack pointer |
+| Return stack | 256 × 16-bit | Stores return addresses for CALL/RET |
+| Program space | 4096 bytes | 16-bit program counter |
+| Data memory | 4096 bytes | Byte-addressable |
+
+## Error Codes
+
+| Code | Name | Description |
+|------|------|-------------|
+| 0 | OK | Success |
+| 1 | STACK_OVERFLOW | Data stack full |
+| 2 | STACK_UNDERFLOW | Data stack empty |
+| 3 | FILE_TOO_LARGE | Program exceeds 4096 bytes |
+| 4 | FILE_EMPTY | Program file is empty |
+| 5 | NO_INPUT_FILE | No filename given |
+| 6 | FILE_NOT_FOUND | Cannot open file |
+| 7 | UNKNOWN_OPCODE | Invalid instruction |
+| 8 | PC_OUT_OF_BOUNDS | Program counter past end |
+| 9 | JUMP_OUT_OF_BOUNDS | Jump target out of range |
+| 10 | DIVISION_BY_ZERO | Division by zero |
+| 11 | FILE_READ_ERROR | I/O error reading file |
+| 12 | RETURN_STACK_OVERFLOW | Return stack full |
+| 13 | RETURN_STACK_UNDERFLOW | Return stack empty |
+
+## Building
+
 ```bash
-git clone https://github.com/Moritisimor/AtomVM
-cd AtomVM/src
-gcc atomvm.c -o atomvm
-nim c atomasm.nim
+make all        # VM + assembler
+make vm         # C VM only
+make asm        # Nim assembler only
+make test       # full test suite
+make lint       # C lint with -Werror
+make clean      # remove build artifacts
 ```
+
+Requires a C99 compiler and [Nim](https://nim-lang.org/) 2.0+.
+
+## License
+
+MIT

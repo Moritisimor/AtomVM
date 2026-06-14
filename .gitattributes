@@ -1,0 +1,12 @@
+* text=auto eol=lf
+
+*.c text
+*.h text
+*.nim text
+*.md text
+*.sh text
+*.yml text
+Makefile text
+.gitignore text
+.editorconfig text
+LICENSE text

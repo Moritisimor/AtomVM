@@ -233,7 +233,7 @@ Value: 0xf / 15
 
 ### Description
 
-Jumps to an immediate value/label if the topmost element is equal to zero (0x0).
+Jumps to an immediate value/label if the topmost element is NOT equal to zero (0x0).
 
 This opcode pops the first element.
 
