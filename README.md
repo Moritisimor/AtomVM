@@ -11,6 +11,7 @@ A stack-based 8-bit virtual machine for the **Quantum** programming language, wr
 - **16-bit addressing** via JMP16, CALL16, PUSH16 extensions
 - **Full error checking** — stack overflow/underflow, division by zero, bounds checks
 - **Assembler (QASM)** — with label resolution, hex literals, error reporting
+- **Disassembler (Atomdisasm)** - written in OCaml with good reconstruction of bytecode to assembly
 - **[QuantumLang](docs/language.md)** — high-level language that compiles to VM bytecode
 - **Core library** — I/O, math, string, memory, and system builtins documented in `docs/stdlib.md`
 
