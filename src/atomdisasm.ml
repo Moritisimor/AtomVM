@@ -19,7 +19,7 @@ let string_of_bytestream bs =
     match left with
     | [] -> acc
     | 0x00 :: rest -> aux (Printf.sprintf "%s\n%s" acc "halt") rest
-    | 0x01 :: immediate :: rest -> aux (Printf.sprintf "%s\n%s %x" acc "push" immediate) rest
+    | 0x01 :: immediate :: rest -> aux (Printf.sprintf "%s\n%s 0x%x" acc "push" immediate) rest
 
     (* Simple Arithmetics *)
     | 0x02 :: rest -> aux (Printf.sprintf "%s\n%s" acc "pop") rest
@@ -29,12 +29,12 @@ let string_of_bytestream bs =
     | 0x06 :: rest -> aux (Printf.sprintf "%s\n%s" acc "div") rest
 
     (* Jump Opcodes *)
-    | 0x07 :: target :: rest -> aux (Printf.sprintf "%s\n%s %x" acc "jmp" target) rest
-    | 0x08 :: target :: rest -> aux (Printf.sprintf "%s\n%s %x" acc "jig" target) rest
-    | 0x09 :: target :: rest -> aux (Printf.sprintf "%s\n%s %x" acc "jie" target) rest
-    | 0x0a :: target :: rest -> aux (Printf.sprintf "%s\n%s %x" acc "jis" target) rest
-    | 0x0b :: target :: rest -> aux (Printf.sprintf "%s\n%s %x" acc "jiz" target) rest
-    | 0x0f :: target :: rest -> aux (Printf.sprintf "%s\n%s %x" acc "jnz" target) rest
+    | 0x07 :: target :: rest -> aux (Printf.sprintf "%s\n%s 0x%x" acc "jmp" target) rest
+    | 0x08 :: target :: rest -> aux (Printf.sprintf "%s\n%s 0x%x" acc "jig" target) rest
+    | 0x09 :: target :: rest -> aux (Printf.sprintf "%s\n%s 0x%x" acc "jie" target) rest
+    | 0x0a :: target :: rest -> aux (Printf.sprintf "%s\n%s 0x%x" acc "jis" target) rest
+    | 0x0b :: target :: rest -> aux (Printf.sprintf "%s\n%s 0x%x" acc "jiz" target) rest
+    | 0x0f :: target :: rest -> aux (Printf.sprintf "%s\n%s 0x%x" acc "jnz" target) rest
 
     (* Basic I/O *)
     | 0x0d :: rest -> aux (Printf.sprintf "%s\n%s" acc "putn") rest
