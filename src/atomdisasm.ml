@@ -11,8 +11,7 @@ let read_file_bytes filename =
 let write_string_to_file filename text =
   let outc = Out_channel.open_text filename in
   Out_channel.output_string outc text;
-  Out_channel.close outc;
-  ()
+  Out_channel.close outc
 
 let string_of_bytestream bs =
   match bs with
@@ -129,14 +128,20 @@ let () =
     try
       let byte_stream = read_file_bytes input_file in
       print_endline (string_of_bytestream byte_stream)
-    with Sys_error e -> Printf.printf "Error while writing to file: %s\n" e
+    with Sys_error e -> (
+      Printf.printf "Error while writing to file: %s\n" e;
+      exit 1
+    )
   )
 
   | [|_; input_file; output_file|] -> (
     try
       let byte_stream = read_file_bytes input_file in
       write_string_to_file output_file (string_of_bytestream byte_stream)
-    with Sys_error e -> Printf.printf "Error while writing to file: %s\n" e
+    with Sys_error e -> (
+      Printf.printf "Error while writing to file: %s\n" e;
+      exit 1
+    )
   )
 
   | _ -> (
